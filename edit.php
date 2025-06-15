@@ -1,0 +1,70 @@
+<?php
+require 'db.php';
+$id = $_GET['id'] ?? null;
+if (!$id) die("Invalid ID");
+
+$stmt = $pdo->prepare("SELECT * FROM users WHERE id = ?");
+$stmt->execute([$id]);
+$user = $stmt->fetch();
+if (!$user) die("User not found");
+
+$name = $user['name'];
+$age = $user['age'];
+
+$errors = [];
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $name = trim($_POST['name']);
+    $age = (int)$_POST['age'];
+        if (!$name) $errors[] = 'Name is required';
+    if ($age < 60) $errors[] = 'Age must be 60 or above';
+
+    if (empty($errors)) {
+        $stmt = $pdo->prepare("UPDATE users SET name = ?, age = ? WHERE id = ?");
+        $stmt->execute([$name, $age, $id]);
+        header("Location: index.php");
+        exit;
+    }
+}
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Edit Senior</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+<div class="container py-5">
+    <h2 class="mb-4">Edit Senior Citizen</h2>
+    <?php if (!empty($errors)): ?>
+        <div class="alert alert-danger">
+            <ul class="mb-0">
+                <?php foreach ($errors as $error): ?>
+                    <li><?= htmlspecialchars($error) ?></li>
+                <?php endforeach; ?>
+            </ul>
+        </div>
+    <?php endif; ?>
+    <form method="post" class="row g-3">
+
+
+        <div class="col-12">
+            <label for="name" class="form-label">Full Name</label>
+            <input type="text" class="form-control" name="name" id="name" value="<?= htmlspecialchars($name) ?>" required>
+        </div>
+        <div class="col-12">
+            <label for="age" class="form-label">Age (60+ only)</label>
+            <input type="number" class="form-control" name="age" id="age" value="<?= htmlspecialchars($age) ?>" min="60" required>
+        </div>
+                <div class="col-12">
+            <button type="submit" class="btn btn-primary">Update</button>
+            <a href="index.php" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+</body>
+</html>
+
